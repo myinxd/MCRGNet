@@ -41,7 +41,7 @@ $ env/bin/pip install -r ./requirements.txt
 In addition, the computation can be accelerated by paralledly processing with GPUs. In this work, our scripts are written under the guide of [Nvidia CUDA](https://developer.nvidia.com/cuda-downloads), thus the Nvidia GPU hardware is also required. You can either refer to the official guide to install CUDA, or refer to this brief [guide](https://github.com/myinxd/MCRGNet/blob/master/cuda_installation.md) by us.
 
 
-## Demons and Usage
+## Demos and Usage
 To use the MCRGNet, we provide demos to show how to pretrain and finetune the network. Note that the [jupyter-notebook](http://jupyter.org/) is required.
 
 1. [cae-pretrain-demo](https://github.com/myinxd/MCRGNet/blob/master/demo/cae-pretrain-demo.ipynb): Pre-train the network

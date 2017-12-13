@@ -32,31 +32,55 @@ class ConvAE():
 
     inputs
     ======
-    X_in: np.ndarray
-        The sample matrix, whose size is (s,d,r,c).
-        s: number of samples, d: dimensions,
-        r: rows, c: cols
-    X_out: np.ndarray
-        The real output, which is as the same as X_in
+    input_shape: np.ndarray
+        Shape of the input of the network = (d,r,c).
+        d: dimensions,
+        r: rows,
+        c: cols
     kernel_size: list
-        Window sizes of the kernels in each ConvLayer
+        Shape of the kernels in each ConvLayer
     Kernel_num: list
         Number of kernels in each ConvLayer
-    pool_flag: list of bool values
-        Flags of pooling layer w.r.t. to the ConvLayer
-    pool_size: list
-        List of the pooling kernels' size
     fc_nodes: list
         The dense layers after the fully connected layer
         of the last ConvLayer or pooling layer
     encode_nodes: int
         Number of nodes in the encode layer
-    droprate: float
-        Dropout rate, belongs to [0,1]
+    padding: tuple (pad_en, pad_de)
+        Padding modes for encode and decode blocks,
+        default as ('SAME','SAME')
+    stride: 2D tuple
+        Stride step, default as (2, 2)
+    numclass: int
+        Number of classes at the sofrmax layer
+    valrate: float
+        Validation rate, range from 0.0 to 0.1, default as 0.3
+    sess: tf.Session
+        The restored session of pretrained, default as None
+    name: str
+        Name of the saved pretrained network
 
     Methods
     =======
-    gen_layers:
+    gen_BatchIterator: Generate a iterator for batch training.
+    cae_build: Build the CAE network.
+    gen_cost: Generate the CAE cost function.
+    gen_optimizer: Generate the ADAM optimizer.
+    gen_validation: Get training and validation subsets with provided rate.
+    cae_train: Train the CAE network.
+    cae_test: Test the CAE network.
+    cae_encode: Get the feature vector of the input image.
+    cae_decode: Reconstruct from a feature vector.
+    cae_save: Save the CAE network.
+    gen_cnn_BatchIterator: Generate a iterator for cnn batch training.
+    cnn_build: Build the CNN network.
+    gen_cnn_cost: Generate the CNN cost function.
+    gen_cnn_optimizer: Generate the CNN optimizer.
+    cnn_train: Train the CNN network.
+    cnn_predict: Predict or classify a RG image.
+    gen_accuracy: Generate the accuracy tensor.
+    cnn_accuracy: Test The CNN network.
+    cnn_save: Save the CNN network.
     """
 
     def __init__(self, input_shape,
@@ -65,8 +89,8 @@ class ConvAE():
                  encode_nodes=10,
                  padding = ('SAME','SAME'),
                  stride = (2, 2),
-                 numclass = 5,
-                 valrate = 0.2,
+                 numclass = 2,
+                 valrate = 0.3,
                  sess = None,
                  name = None,
                  ):
@@ -293,20 +317,20 @@ class ConvAE():
             label_val = None
             idx = np.random.permutation(len(data))
             num_val = int(len(data)*self.valrate)
-            data_val = {"data": data[0:num_val,:,:,:],
+            data_val = {"data": data[idx[0:num_val],:,:,:],
                         "label": label_val}
             # train
-            data_train = {"data": data[num_val:,:,:,:],
+            data_train = {"data": data[idx[num_val:],:,:,:],
                           "label": label_train}
         else:
             # Training and validation
             idx = np.random.permutation(len(data))
             num_val = int(len(data)*self.valrate)
-            data_val = {"data": data[0:num_val,:,:,:],
-                        "label": label[0:num_val,:]}
+            data_val = {"data": data[idx[0:num_val],:,:,:],
+                        "label": label[idx[0:num_val],:]}
             # train
-            data_train = {"data": data[num_val:,:,:,:],
-                          "label": label[num_val:,:]}
+            data_train = {"data": data[idx[num_val:],:,:,:],
+                          "label": label[idx[num_val:],:]}
 
         return data_train,data_val
 
