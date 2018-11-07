@@ -1,6 +1,6 @@
 #!/usr/bin/env/ python3
 #
-# Copyright (c) 2017 Zhixian MA <zxma_sjtu@qq.com>
+# Copyright (c) 2018 Zhixian MA <zxma_sjtu@qq.com>
 # MIT license
 #
 # References:
@@ -43,6 +43,7 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering :: Image Classification ",
     ],
     packages=find_packages(exclude=["docs", "tests"]),

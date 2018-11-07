@@ -1,4 +1,4 @@
-# Copyright (C) 2017 Zhixian MA <zxma_sjtu@qq.com>
+# Copyright (C) 2018 Zhixian MA <zx@mazhixian.me>
 
 """
 A class to define the convolutional autoencoder (CAE) by tensorflow.
@@ -20,6 +20,8 @@ Update
 [2017-09-07] Add draw_training_curve()
 
 [2017-09-14] Variable space to fix the checkpoint, and solve restore problem
+[2018-05-03] Add adjustable learning rate
+[2018-08-24] Fixed and adjusted parameters
 """
 
 import tensorflow as tf
@@ -113,14 +115,16 @@ class ConvAE():
         in_depth = self.input_shape[3]
         in_row = self.input_shape[1]
         in_col = self.input_shape[2]
-        self.l_in = tf.placeholder(tf.float32,
-                                [None,in_row,in_col,in_depth],
-                                name='l_in')
+        self.l_in = tf.placeholder(
+            tf.float32,
+            [None,in_row,in_col,in_depth],
+            name='l_in')
         # decoder layer
         self.l_de = tf.placeholder(tf.float32,
                                    [None,in_row,in_col,in_depth], name='l_de')
         self.droprate = tf.placeholder(tf.float32, name="droprate")
         self.valrate = 0.2
+        self.get_learning_rate()
         # sess for reload
         self.sess = sess
         if self.sess is not None:
@@ -162,6 +166,22 @@ class ConvAE():
                 excerpt = slice(start_idx, start_idx + batch_size)
             yield data[excerpt]
 
+
+    def get_learning_rate(self):
+        """Get the exponentially decreased learning rate."""
+        self.init_lr = tf.placeholder(tf.float32, name="init_lr")
+        self.global_step = tf.placeholder(tf.float32, name="global_step")
+        self.decay_step = tf.placeholder(tf.float32, name="decay_step")
+        self.decay_rate = tf.placeholder(tf.float32, name="decay_rate")
+        self.learning_rate = tf.train.exponential_decay(
+            learning_rate=self.init_lr ,
+            global_step=self.global_step,
+            decay_steps=self.decay_step,
+            decay_rate=self.decay_rate,
+            staircase=False,
+            name="learning_rate")
+
+
     # Pre-training part
     def cae_build(self):
         """Construct the network, including ConvLayers and FC layers."""
@@ -186,18 +206,20 @@ class ConvAE():
             self.shapes_en.append(current_input.get_shape().as_list())
             W_name = "Conv_En_W{0}".format(i)
             b_name = "Conv_En_b{0}".format(i)
-            W = weight_variable(shape=[self.kernel_size[i],
-                                       self.kernel_size[i],
-                                       depth_input,
-                                       depth_output,
-                                       ],
-                                name=W_name)
+            W = weight_variable(
+                shape=[self.kernel_size[i],
+                       self.kernel_size[i],
+                       depth_input,
+                       depth_output],
+                name=W_name)
             b = bias_variable(shape=[depth_output], name=b_name)
             self.encoder.append(W) # share
-            output = tf.add(tf.nn.conv2d(current_input,
-                                            W, strides=[1,self.stride[0],self.stride[1],1],
-                                            padding=self.pad_en), b)
+            output = tf.add(
+                tf.nn.conv2d(current_input,
+                             W, strides=[1,self.stride[0],self.stride[1],1],
+                             padding=self.pad_en), b)
             output = tf.nn.relu(output)
+            output = tf.nn.dropout(output, self.droprate)
             current_input = output
 
         if self.encode_nodes is not None:
@@ -205,8 +227,7 @@ class ConvAE():
             shape_conv = current_input.get_shape().as_list()
             depth_dense = shape_conv[1] * shape_conv[2] * shape_conv[3]
             l_en_dense = tf.reshape(current_input, [-1, depth_dense])
-            # dropout layer
-            # keep_prob = tf.placeholder(tf.float32)
+
             # fully connected
             depth_input = depth_dense
             current_input = l_en_dense
@@ -254,10 +275,6 @@ class ConvAE():
                 current_input = output
 
             # Dense layer
-            # W_de = weight_variable(shape=[depth_input, depth_dense])
-            # b_de = bias_variable(shape=[depth_dense])
-            # output = tf.nn.relu(tf.matmul(current_input, W_de) + b_de)
-            # current_input = tf.nn.dropout(output, self.droprate)
             # reshape
             current_input = tf.reshape(current_input,
                                     [-1,
@@ -282,6 +299,7 @@ class ConvAE():
                 strides = [1,self.stride[0],self.stride[1],1], padding=self.pad_de),
                 b)
             output = tf.nn.relu(output)
+            output = tf.nn.dropout(output, self.droprate)
             current_input = output
 
         # Decoder output
@@ -295,7 +313,7 @@ class ConvAE():
     def gen_optimizer(self, learning_rate=0.01):
         """Generate the optimizer to minimize the cose"""
         self.gen_cost()
-        self.optimizer = tf.train.AdamOptimizer(learning_rate, name="cae-optimizer").minimize(self.cost)
+        self.optimizer = tf.train.AdamOptimizer(self.learning_rate, name="cae-optimizer").minimize(self.cost)
 
     def gen_validation(self, data, label=None):
         """Separate the dataset into training and validation subsets.
@@ -350,15 +368,24 @@ class ConvAE():
         self.cae_trainloss = []
         self.cae_valloss = []
 
+        decay_rate = 0.95
         # generate training and validation samples
         data_train,data_val = self.gen_validation(data=data, label=None)
         numbatch_trn = len(data_train["data"]) // batch_size
         numbatch_val = len(data_val["data"]) // batch_size
         for epoch in range(num_epochs):
+            # update learning rate
+            lr_dict = {
+                self.init_lr: learning_rate,
+                self.global_step: epoch,
+                self.decay_step: batch_size,
+                self.decay_rate: decay_rate}
             cost_trn = 0
             cost_val = 0
             for batch in self.gen_BatchIterator(data=data_train["data"], batch_size=batch_size):
-                self.sess.run(self.optimizer, feed_dict={self.l_in: batch, self.droprate: droprate})
+                trn_dict = {self.l_in: batch, self.droprate: droprate}
+                trn_dict.update(lr_dict)
+                self.sess.run(self.optimizer, feed_dict=trn_dict)
                 cost_trn += self.sess.run(self.cost,
                                feed_dict={self.l_in: batch, self.droprate: 0.0})
 
@@ -515,7 +542,9 @@ class ConvAE():
         saver = tf.train.Saver()
         saver.save(self.sess, netpath)
 
-    ## Fine-tuning part
+    ##################
+    #Fine-tuning part#
+    ##################
     def gen_cnn_BatchIterator(self, data, label, batch_size=100, shuffle=True):
         """
         Return the next 'batch_size' examples
@@ -549,7 +578,7 @@ class ConvAE():
         numbatch = len(indices) // batch_size
         return data,label,numbatch
 
-    def cnn_build(self, learning_rate):
+    def cnn_build(self):
         """Build the cnn for fine-tuning, just add a softmax layer after the encoder layer.
            Since the weights are shared between encoder and decoder, the fine-tuned weights
            can be reused.
@@ -567,7 +596,7 @@ class ConvAE():
 
         self.l_cnn = tf.nn.softmax(tf.matmul(self.l_en, W_soft) + b_soft)
         # generate the optimizer
-        self.gen_cnn_optimizer(learning_rate = learning_rate)
+        self.gen_cnn_optimizer()
         # generate the accuracy estimator
         self.gen_accuracy()
 
@@ -576,7 +605,7 @@ class ConvAE():
         # cost function
         self.cnn_cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.y_, logits=self.l_cnn))
 
-    def gen_cnn_optimizer(self, learning_rate = 0.01):
+    def gen_cnn_optimizer(self):
         """Generate the optimizer for the fine-tuning cnn.
 
         Reference
@@ -585,9 +614,9 @@ class ConvAE():
             https://stackoverflow.com/questions/38778760/tensorflow-no-gradients-provided-for-any-variable
         """
         self.gen_cnn_cost()
-        self.cnn_optimizer = tf.train.AdamOptimizer(learning_rate,name='cnn-optimizer').minimize(self.cnn_cost)
+        self.cnn_optimizer = tf.train.AdamOptimizer(self.learning_rate,name='cnn-optimizer').minimize(self.cnn_cost)
 
-    def cnn_train(self, data, label, num_epochs=20, learning_rate=0.01, batch_size=100, droprate=0.5):
+    def cnn_train(self, data, label, num_epochs=20, learning_rate=0.0005, batch_size=100, droprate=0.5):
         """Train the net"""
         timestamp = time.strftime('%Y-%m-%d: %H:%M:%S', time.localtime(time.time()))
         print("[%s] Training parameters\n" % (timestamp))
@@ -603,30 +632,39 @@ class ConvAE():
         self.cnn_valloss = []
         self.cnn_trainacc = []
         self.cnn_valacc = []
+
+        decay_rate = 0.95
         # generate training and validation samples
         data_train,data_val = self.gen_validation(data=data, label=label)
         for epoch in range(num_epochs):
             cost = 0
             acc = 0
-            data_batch,label_batch,numbatch = self.gen_cnn_BatchIterator(data=data_train["data"],
-                                                                         label=data_train["label"],
-                                                                         batch_size=batch_size)
+            data_batch,label_batch,numbatch = self.gen_cnn_BatchIterator(
+                data=data_train["data"], label=data_train["label"], batch_size=batch_size)
+            # update learning rate
+            lr_dict = {
+                self.init_lr: learning_rate,
+                self.global_step: epoch,
+                self.decay_step: batch_size,
+                self.decay_rate: decay_rate}
             for i in range(numbatch):
                 batch = data_batch[i*batch_size:(i+1)*batch_size,:,:,:]
                 batch_label = label_batch[i*batch_size:(i+1)*batch_size,:]
+                trn_dict = {self.l_in: batch, self.y_: batch_label, self.droprate: droprate}
+                trn_dict.update(lr_dict)
                 # print(batch_label.shape)
                 self.sess.run(self.cnn_optimizer,
-                              feed_dict={self.l_in: batch,
-                                         self.y_: batch_label,
-                                         self.droprate: droprate})
-                cost += self.sess.run(self.cnn_cost,
-                                      feed_dict={self.l_in: batch, self.y_: batch_label, self.droprate: 0.0})
+                              feed_dict=trn_dict)
+                cost += self.sess.run(
+                    self.cnn_cost,
+                    feed_dict={self.l_in: batch, self.y_: batch_label, self.droprate: 0.0})
                 acc += self.cnn_accuracy(img=batch, label=batch_label)
             # validation
-            valloss = self.sess.run(self.cnn_cost,
-                                    feed_dict={self.l_in: data_val["data"],
-                                               self.y_: data_val["label"],
-                                               self.droprate: 0.0})
+            valloss = self.sess.run(
+                self.cnn_cost,
+                feed_dict={self.l_in: data_val["data"],
+                           self.y_: data_val["label"],
+                           self.droprate: 0.0})
             valacc = self.cnn_accuracy(img=data_val["data"], label=data_val["label"])
             timestamp = time.strftime('%Y-%m-%d: %H:%M:%S', time.localtime(time.time()))
             print("[%s] Epoch: %03d Trn loss: %.6f Trn acc: %.3f Val loss: %.6f Val acc: %.3f" %

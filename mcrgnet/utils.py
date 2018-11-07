@@ -1,4 +1,4 @@
-# copyright (C) 2017 zxma_sjtu@qq.com
+# copyright (C) 2018 zxma_sjtu@qq.com
 
 """
 The utils for construcing the convolutional auto-encoder (CAE) model.

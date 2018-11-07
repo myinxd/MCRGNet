@@ -1,4 +1,4 @@
-# Copyright (C) 2017 Zhixian MA <zxma_sjtu@qq.com>
+# Copyright (C) 2018 Zhixian MA <zxma_sjtu@qq.com>
 
 """
 This script assist us to fetch observations, i.e., the sample images from

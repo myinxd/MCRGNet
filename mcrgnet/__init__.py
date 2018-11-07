@@ -1,4 +1,4 @@
-# Copyright (C) 2017 Zhixian MA <zxma_sjtu@qq.com>
+# Copyright (C) 2018 Zhixian MA <zxma_sjtu@qq.com>
 # MIT license
 
 from . import ConvAE
@@ -8,9 +8,9 @@ from . import utils
 __pkgname__ = "mcrgnet"
 __version__ = "0.0.1"
 __author__ = "Zhixian MA"
-__author_email__ = "zxma_sjtu@qq.com"
+__author_email__ = "zx@mazhixian.me"
 __license__ = "MIT"
 __keywords__ = "Morphological classification of radio galaxies network"
-__copyright = "Copyright (C) 2017 Zhixian MA"
+__copyright = "Copyright (C) 2018 Zhixian MA"
 __url__ = "https://github.com/myinxd/MCRGNet"
 __description__ = ("A toolbox to classify radio galaxies according to their morphologies.")

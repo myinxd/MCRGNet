@@ -1,4 +1,4 @@
-# Copyright (C) 2017 Zhixian MA <zx@mazhixian.me>
+# Copyright (C) 2018 Zhixian MA <zx@mazhixian.me>
 
 """
 Final estimation
@@ -8,21 +8,20 @@ Final estimation
 
 Usage
 =====
-python3 getEstLabel <foldname> 
-# Labels estimated by all of the five dichotomous branches are required. 
+python3 getEstLabel <foldname>
+# Labels estimated by all of the five dichotomous branches are required.
 """
 
 
 import sys
 import os
 import pickle
-import numpy as np
 
 def main(argv):
     # folder for saving
     foldname = argv[1]
-    if not os.path.exists(subfold):
-        os.mkdir(subfold)
+    if not os.path.exists(foldname):
+        os.mkdir(foldname)
     # load dichotomous labels
     fnames = ['est_l1.pkl','est_l2.pkl','est_l3.pkl','est_l4.pkl','est_l5.pkl']
 
