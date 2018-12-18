@@ -22,7 +22,8 @@ Byte-by-byte Description of file: datafile4.txt
   78- 84 F7.5   ---   Prob      Probability of classification by MCRGNet
 --------------------------------------------------------------------------------
 Note (1): Labels of RG types in this work
-    1 = compact sources (FR0s are marked as 1F);
+    1 = compact sources;
+   1F = FR0;
     2 = typical FRIs;
     3 = typical FRIIs;
     4 = Bent tailed (BT);
@@ -31,7 +32,6 @@ Note (1): Labels of RG types in this work
 Note (2): Labels of BT subtypes in this work
     1 = FRI-like;
     2 = FRII-like;
-   1F = FR0;
   N/A = Other types.
 --------------------------------------------------------------------------------
 J000001.57-092940.3   0.00044  -9.49453 0.1905     9.10 -22.45  1 N/A  1 N/A 0.99992
