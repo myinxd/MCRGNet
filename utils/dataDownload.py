@@ -176,7 +176,7 @@ def batch_download_csv(dataFetcher, listpath, batch, savefolder):
         ra_s_i = np.fix(np.round(ra_rms[2]*100)/100)
         ra_s_f = np.round(ra_rms[2]*100)/100 - ra_s_i
         ra_s = "%02d.%02d" % (int(ra_s_i),int(ra_s_f*100))
-        if dec_dms[0] > 0:
+        if dec_dms[0] >= 0:
             de_d = "+%02d" % (int(dec_dms[0]))
         else:
             de_d = "-%02d" % (abs(int(dec_dms[0])))
