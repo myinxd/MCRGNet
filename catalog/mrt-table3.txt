@@ -1,4 +1,4 @@
-Title: A Machine Learning Based Morphological Classification of 14,251 Radio 
+Title: A Machine Learning Based Morphological Classification of 14,245 Radio 
        AGNs Selected From The Best-Heckman Sample 
 Authors: Ma Z., Xu H., Zhu J., Hu D., Li W., Shan C., Zhu Z., Gu L., 
          Li J., Liu C., Wu X. 
