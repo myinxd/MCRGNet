@@ -143,7 +143,12 @@ def batch_download_csv(dataFetcher, listpath, batch, savefolder):
     print('[%s]: Downloading samples from %s' % (timestamp, dataFetcher.get_url()))
 
     # load csv
-    f = read_csv(listpath, sep=' ')
+    if listpath.split(".")[-1] is not "csv":
+        # txt to csv
+        bin2csv(listpath, "/tmp/tmptable.csv")
+        f = read_csv("/tmp/tmptable.csv", sep=' ')
+    else:
+        f = read_csv(listpath, sep=' ')
     ra = f['Ra'] # RA
     dec = f['Dec'] # DEC
     # regularize the batch
@@ -156,7 +161,8 @@ def batch_download_csv(dataFetcher, listpath, batch, savefolder):
         # timestamp
         t = time.strftime('%Y-%m-%d',time.localtime(time.time()))
         # get params
-        temp_c = SkyCoord(ra=ra[i]*u.degree, dec=dec[i]*u.degree, frame='icrs')
+        print(ra[i], dec[i])
+        temp_c = SkyCoord(ra=ra[i]*u.hour, dec=dec[i]*u.degree, frame='icrs')
         # Coordinate transform
         ra_rms = tuple(temp_c.ra.hms)
         dec_dms = tuple(temp_c.dec.dms)
@@ -214,7 +220,7 @@ def batch_download_excel(dataFetcher, listpath, batch, savefolder):
     timestamp = time.strftime('%Y-%m-%d: %H:%M:%S',time.localtime(time.time()))
     print('[%s]: Downloading samples from %s' % (timestamp, dataFetcher.get_url()))
 
-    # load csv
+    # load excel
     f = read_excel(listpath)
     samples = f.get_values()
     ra = samples[:,1] # RA
@@ -238,7 +244,6 @@ def batch_download_excel(dataFetcher, listpath, batch, savefolder):
         if DEC_d[0] == '−':
             DEC_d = '-' + DEC_d[1:]
         update_param = {'RA': " ".join([RA_h, RA_m, RA_s, DEC_d, DEC_a, DEC_s])}
-        print(update_param['RA'])
         # update param
         dataFetcher.get_params_update(params_update=update_param)
         # download file
