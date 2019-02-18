@@ -585,3 +585,11 @@ def vec2onehot(label,numclass):
         label_onehot[i, int(l)] = 1
 
     return label_onehot
+
+def read_image(fpath,ftype):
+    if ftype == 'fits':
+        h = fits.open(fpath)
+        img = h[0].data
+    else:
+        img = imread(name=fpath, flatten=True)
+    return img
